@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>СИБИТ Квиз — мои викторины</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .hero{background:linear-gradient(135deg,var(--blue) 0%,var(--blue-deep) 100%);color:#fff;border-radius:20px;padding:34px 34px 30px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;border:34px solid rgba(211,47,47,.55)}
+  .hero h1{font-size:44px;max-width:620px}
+  .hero p{margin:10px 0 0;opacity:.85;max-width:540px}
+  .hero-actions{display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin:34px 0 14px;gap:12px;flex-wrap:wrap}
+  .section-head h2{font-size:26px;color:var(--blue)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .quiz{padding:20px;display:flex;flex-direction:column;gap:10px;transition:box-shadow .15s,transform .15s}
+  .quiz:hover{box-shadow:0 10px 30px rgba(16,33,70,.14);transform:translateY(-2px)}
+  .quiz h3{font-size:22px;color:var(--ink);text-transform:none;font-weight:600}
+  .quiz p{margin:0;font-size:14px;color:var(--muted);min-height:20px}
+  .quiz .row{display:flex;gap:8px;align-items:center;margin-top:auto;padding-top:8px}
+  .quiz .row .spacer{flex:1}
+  .menu{position:relative}
+  .menu-list{position:absolute;right:0;bottom:110%;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;min-width:180px;z-index:5}
+  .menu-list button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:500;font-size:14px}
+  .menu-list button:hover{background:var(--blue-soft)}
+  .menu-list button.danger{color:var(--red)}
+  .empty{padding:44px;text-align:center}
+  .how{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:34px}
+  .how .card{padding:20px}
+  .how b{font-family:var(--head);font-size:34px;color:var(--red);display:block;line-height:1}
+  .how h3{font-size:18px;margin:8px 0 4px;color:var(--blue)}
+  .how p{margin:0;font-size:14px;color:var(--muted)}
+  @media (max-width:720px){.hero{grid-template-columns:1fr;padding:26px}.hero h1{font-size:32px}.how{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/"><span class="brand-mark">С</span><span class="brand-name">СИБИТ <b>Квиз</b></span></a>
+  <span class="spacer"></span>
+  <a class="btn btn-onblue btn-sm" href="/play" target="_blank">Войти как игрок</a>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <h1>Живые викторины для пар и мероприятий</h1>
+      <p>Составь вопросы, выведи QR-код на проектор — студенты отвечают с телефонов, а на экране в реальном времени растёт таблица лидеров.</p>
+    </div>
+    <div class="hero-actions">
+      <a class="btn btn-primary btn-lg" href="/edit?id=new">+ Создать викторину</a>
+    </div>
+  </section>
+
+  <div class="section-head">
+    <h2>Мои викторины</h2>
+    <div style="display:flex;gap:8px">
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer">Импорт из файла<input type="file" accept=".json,application/json" id="importFile" hidden></label>
+    </div>
+  </div>
+  <div class="grid" id="list"><div class="card empty muted">Загружаю…</div></div>
+
+  <div class="how">
+    <div class="card"><b>01</b><h3>Создай</h3><p>Вопросы с одним или несколькими верными ответами, таймер и очки на каждый вопрос. Можно вставить список вопросов разом.</p></div>
+    <div class="card"><b>02</b><h3>Запусти</h3><p>Нажми «Запустить» и выведи экран ведущего на проектор. Игроки сканируют QR или вводят код на сайте.</p></div>
+    <div class="card"><b>03</b><h3>Играй</h3><p>Каждый отвечает в своём темпе. Очки за верный ответ, бонус за скорость и серию. В конце — пьедестал и выгрузка результатов.</p></div>
+  </div>
+</main>
+
+<div class="modal-back hidden" id="launch">
+  <form class="modal" id="launchForm">
+    <h2>Запуск игры</h2>
+    <p class="muted" id="launchTitle" style="margin:0 0 10px"></p>
+    <label class="switch"><span>Перемешать вопросы<small>У каждого игрока свой порядок — сложнее списать</small></span><input type="checkbox" name="shuffleQuestions" checked></label>
+    <label class="switch"><span>Показывать верный ответ<small>После каждого вопроса на телефоне</small></span><input type="checkbox" name="showCorrect" checked></label>
+    <label class="switch"><span>Бонус за скорость<small>Кто быстрее ответил, получает больше очков</small></span><input type="checkbox" name="speedBonus" checked></label>
+    <label class="switch"><span>Можно войти после старта<small>Опоздавшие начнут с первого вопроса</small></span><input type="checkbox" name="allowLateJoin" checked></label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="launchCancel">Отмена</button>
+      <button type="submit" class="btn btn-primary">Открыть комнату</button>
+    </div>
+  </form>
+</div>
+
+<script src="/common.js"></script>
+<script>
+const listEl = document.getElementById('list');
+let launchId = null;
+
+async function load() {
+  try {
+    const items = await api('/api/quizzes');
+    if (!items.length) {
+      listEl.innerHTML = `<div class="card empty"><h3 style="color:var(--blue);margin-bottom:8px">Пока пусто</h3><p class="muted">Создай первую викторину — это займёт пару минут.</p><a class="btn btn-primary" href="/edit?id=new">+ Создать викторину</a></div>`;
+      return;
+    }
+    listEl.innerHTML = items.map(q => `
+      <article class="card quiz" data-id="${esc(q.id)}">
+        <span class="tag">${q.count} ${plural(q.count, 'вопрос', 'вопроса', 'вопросов')}</span>
+        <h3>${esc(q.title)}</h3>
+        <p>${esc(q.description)}</p>
+        <div class="row">
+          <button class="btn btn-primary btn-sm" data-act="launch" ${q.count ? '' : 'disabled'}>▶ Запустить</button>
+          <a class="btn btn-ghost btn-sm" href="/edit?id=${encodeURIComponent(q.id)}">Изменить</a>
+          <span class="spacer"></span>
+          <div class="menu"><button class="icon-btn" data-act="menu" aria-label="Ещё">⋯</button></div>
+        </div>
+      </article>`).join('');
+  } catch (e) { listEl.innerHTML = `<div class="card empty muted">${esc(e.message)}</div>`; }
+}
+
+listEl.addEventListener('click', async e => {
+  const btn = e.target.closest('[data-act]'); if (!btn) return;
+  const card = btn.closest('.quiz'); const id = card.dataset.id;
+  const act = btn.dataset.act;
+  if (act === 'launch') {
+    launchId = id;
+    document.getElementById('launchTitle').textContent = card.querySelector('h3').textContent;
+    document.getElementById('launch').classList.remove('hidden');
+  } else if (act === 'menu') {
+    document.querySelectorAll('.menu-list').forEach(m => m.remove());
+    const m = document.createElement('div'); m.className = 'menu-list';
+    m.innerHTML = `<button data-act="copy">Сделать копию</button><button data-act="export">Скачать файлом</button><button data-act="delete" class="danger">Удалить</button>`;
+    btn.parentElement.appendChild(m); e.stopPropagation();
+  } else if (act === 'copy') {
+    const q = await api('/api/quizzes/' + id);
+    await api('/api/quizzes', { method: 'POST', body: JSON.stringify({ ...q, title: q.title + ' (копия)' }) });
+    toast('Копия создана'); load();
+  } else if (act === 'export') {
+    const q = await api('/api/quizzes/' + id);
+    downloadFile((q.title || 'quiz').replace(/[^\p{L}\p{N} _-]/gu, '').trim() + '.json', JSON.stringify(q, null, 2));
+  } else if (act === 'delete') {
+    if (await confirmBox('Удалить викторину?', 'Это действие нельзя отменить.', 'Удалить')) {
+      await api('/api/quizzes/' + id, { method: 'DELETE' }); toast('Удалено'); load();
+    }
+  }
+});
+document.addEventListener('click', () => document.querySelectorAll('.menu-list').forEach(m => m.remove()));
+
+document.getElementById('launchCancel').onclick = () => document.getElementById('launch').classList.add('hidden');
+document.getElementById('launchForm').onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target, settings = {};
+  for (const k of ['shuffleQuestions', 'showCorrect', 'speedBonus', 'allowLateJoin']) settings[k] = f[k].checked;
+  try {
+    const { pin, hostToken } = await api('/api/games', { method: 'POST', body: JSON.stringify({ quizId: launchId, settings }) });
+    location.href = `/host#pin=${pin}&t=${hostToken}`;
+  } catch (err) { toast(err.message); }
+};
+
+document.getElementById('importFile').onchange = async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const items = Array.isArray(data) ? data : [data];
+    for (const q of items) await api('/api/quizzes', { method: 'POST', body: JSON.stringify(q) });
+    toast(`Импортировано: ${items.length}`); load();
+  } catch (err) { toast('Не удалось прочитать файл: ' + err.message); }
+  e.target.value = '';
+};
+
+load();
+</script>
+</body>
+</html>
