@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>СИБИТ Квиз — экран ведущего</title>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/style.css">
 <style>
   body{background:var(--blue-deep);color:#fff;min-height:100vh;overflow-x:hidden}
@@ -21,6 +22,7 @@
   /* лобби */
   .lobby{display:grid;grid-template-columns:minmax(320px,440px) 1fr;gap:28px;align-items:start}
   .join{background:#fff;color:var(--ink);border-radius:22px;padding:26px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .join .join-logo{height:46px;width:auto;display:block;margin:0 auto 14px}
   .join .step{font-size:16px;font-weight:600;color:var(--muted)}
   .join .url{font-family:var(--head);font-size:26px;color:var(--blue);font-weight:600;margin:4px 0 14px;word-break:break-all;text-transform:none}
   .join .qr{width:100%;max-width:330px;aspect-ratio:1;margin:0 auto;display:block;border-radius:12px}
@@ -107,7 +109,7 @@
 </head>
 <body>
 <div class="bar">
-  <a class="brand" href="/" title="К викторинам"><span class="brand-mark">С</span><span class="brand-name">СИБИТ <b>Квиз</b></span></a>
+  <a class="brand" href="/" title="К викторинам"><span class="brand-logo"><img src="/logo-light.png" alt="СИБИТ"></span><span class="brand-name">СИБИТ <b>Квиз</b></span></a>
   <span class="title" id="quizTitle"></span>
   <span class="spacer"></span>
   <span class="stat hidden" id="clock">⏱ <b id="clockV">0:00</b></span>
@@ -210,6 +212,7 @@ function renderLobby() {
     app.innerHTML = `
       <div class="lobby">
         <section class="join">
+          <img class="join-logo" src="/logo.png" alt="СИБИТ">
           <div class="step">Наведи камеру телефона на код</div>
           <img class="qr" src="/api/qr.svg?data=${encodeURIComponent(joinUrl)}" alt="QR-код для входа">
           <div class="step" style="margin-top:14px">или открой</div>
