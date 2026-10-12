@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#1B3B73">
+<title>СИБИТ Квиз — игра</title>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+  html,body{height:100%}
+  body{background:var(--blue);color:#fff;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;user-select:none}
+  .screen{min-height:100%;min-height:100dvh;display:flex;flex-direction:column;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+  .center-col{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:14px;max-width:420px;width:100%;margin:0 auto}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .logo{flex-direction:column;gap:12px}
+  .logo .brand-logo img{height:58px}
+  .logo .brand-name{font-size:30px}
+  .join-card{background:#fff;color:var(--ink);border-radius:20px;padding:22px;width:100%;display:flex;flex-direction:column;gap:12px;box-shadow:0 14px 40px rgba(0,0,0,.25)}
+  .join-card .input{text-align:center;font-size:20px;font-weight:700;padding:14px;user-select:text}
+  .join-card .pin-in{font-family:var(--head);font-size:30px;letter-spacing:.2em}
+  .join-card .btn{width:100%;padding:15px;font-size:18px}
+  .quiz-name{font-weight:700;color:var(--blue);font-size:15px}
+  .err-msg{color:var(--red);font-weight:600;font-size:14px;min-height:20px}
+  .big-av{font-size:84px;width:140px;height:140px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+  h1.big{font-size:38px}
+  .sub{opacity:.8;font-size:16px;margin:0}
+  .pulse{animation:pulse 1.6s infinite}
+  @keyframes pulse{50%{opacity:.45}}
+  @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+
+  /* вопрос */
+  .qtop{display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:700}
+  .pill{background:rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;font-size:14px}
+  .timer{height:8px;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden;margin:12px 0 14px}
+  .timer i{display:block;height:100%;background:#fff;border-radius:99px;transform-origin:left;transition:background .3s}
+  .timer i.warn{background:#FF8A80}
+  .qbox{background:#fff;color:var(--ink);border-radius:16px;padding:18px;text-align:center;font-weight:700;font-size:20px;line-height:1.3;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;min-height:110px}
+  .qbox img{max-width:100%;max-height:28vh;border-radius:10px}
+  .qhint{font-size:13px;color:var(--muted);font-weight:600}
+  .options{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;align-content:stretch}
+  .options.single-col{grid-template-columns:1fr}
+  .option{border:0;border-radius:16px;color:#fff;font-weight:700;font-size:18px;padding:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:84px;position:relative;box-shadow:0 4px 0 rgba(0,0,0,.25);transition:transform .08s,opacity .2s,box-shadow .1s;line-height:1.25;word-break:normal;overflow-wrap:anywhere;hyphens:auto}
+  .options.single-col .option{flex-direction:row;justify-content:flex-start;text-align:left;min-height:62px}
+  .option:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+  .option .lt{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:14px;flex:none}
+  .option.sel{outline:4px solid #fff;outline-offset:-4px}
+  .option.sel::after{content:"✓";position:absolute;top:6px;right:10px;font-size:18px}
+  .options.locked .option{opacity:.45;pointer-events:none}
+  .options.locked .option.sel{opacity:1}
+  .submit{margin-top:12px;width:100%;padding:16px;font-size:18px}
+
+  /* результат */
+  .result{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px;z-index:50;animation:fade .25s ease}
+  .result.ok{background:var(--ok)} .result.bad{background:var(--red)}
+  .result .icon{font-size:76px;line-height:1;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+  .result h1{font-size:44px}
+  .result .pts{font-family:var(--head);font-size:34px;font-weight:600;background:rgba(0,0,0,.18);border-radius:12px;padding:4px 16px}
+  .result .answer{background:rgba(255,255,255,.95);color:var(--ink);border-radius:12px;padding:10px 14px;font-weight:700;max-width:420px}
+  .result .answer small{display:block;color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  .result .meta{opacity:.9;font-weight:600}
+  .result .next{margin-top:18px}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+
+  .score-card{background:#fff;color:var(--ink);border-radius:20px;padding:22px;width:100%}
+  .score-card .place{font-family:var(--head);font-size:72px;font-weight:700;color:var(--red);line-height:1}
+  .score-card .lbl{color:var(--muted);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+  .score-card .row{display:flex;justify-content:space-around;margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+  .score-card .row b{font-family:var(--head);font-size:30px;color:var(--blue);display:block;font-weight:600}
+  .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:60}
+  .confetti i{position:absolute;top:-20px;width:10px;height:16px;border-radius:2px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+  .snd{position:fixed;top:max(10px,env(safe-area-inset-top));right:10px;z-index:70;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;font-size:18px;cursor:pointer;display:grid;place-items:center}
+  .qtop{padding-right:48px}
+  .leave{background:none;border:0;color:rgba(255,255,255,.7);text-decoration:underline;cursor:pointer;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<button class="snd" id="sndBtn" aria-label="Звук"></button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/common.js"></script>
+<script src="/sound.js"></script>
+<script>
+const app = document.getElementById('app');
+const urlPin = new URLSearchParams(location.search).get('pin') || '';
+let session = null; try { session = JSON.parse(localStorage.getItem('sq_player')); } catch {}
+let me = null, q = null, picked = [], timerRAF = 0, deadline = 0, nextTimer = 0, answeredIndex = -1, lastResult = null;
+const LT = 'ABCDEF';
+
+const sndBtn = document.getElementById('sndBtn');
+Sound.onChange(s => { sndBtn.textContent = s.sfxOn ? '🔊' : '🔇'; sndBtn.title = s.sfxOn ? 'Выключить звук' : 'Включить звук'; });
+sndBtn.onclick = e => { e.stopPropagation(); Sound.unlock(); Sound.setSfx(!Sound.state().sfxOn); if (Sound.state().sfxOn) Sound.sfx('tap'); };
+document.addEventListener('pointerdown', () => Sound.unlock(), { capture: true });
+
+const socket = io({ transports: ['websocket', 'polling'] });
+
+socket.on('connect', () => {
+  if (session && (!urlPin || urlPin === session.pin)) {
+    socket.emit('player:rejoin', session, res => {
+      if (res?.ok) { me = { ...session, ...res }; if (res.status === 'lobby') showLobby(); }
+      else { clearSession(); if (!me) showJoin(); }
+    });
+  } else if (!me) showJoin();
+});
+socket.on('disconnect', () => { if (me) toast('Связь пропала, переподключаюсь…'); });
+
+function saveSession() { try { localStorage.setItem('sq_player', JSON.stringify({ pin: me.pin, id: me.id, key: me.key })); } catch {} }
+function clearSession() { session = null; try { localStorage.removeItem('sq_player'); } catch {} }
+
+/* ---------- вход ---------- */
+async function showJoin(errText = '') {
+  stopTimer();
+  let pin = urlPin, title = '';
+  if (pin) {
+    try { const r = await fetch('/api/games/' + encodeURIComponent(pin)); if (r.ok) title = (await r.json()).title; else { pin = ''; errText = errText || 'Игра с этим кодом уже закончилась'; } } catch {}
+  }
+  app.innerHTML = `<div class="screen"><div class="center-col">
+    <div class="logo"><span class="brand-logo"><img src="/logo-light.png" alt="СИБИТ"></span><span class="brand-name">СИБИТ <b>Квиз</b></span></div>
+    <form class="join-card" id="joinForm">
+      ${title ? `<div class="quiz-name">${esc(title)}</div>` : ''}
+      <input class="input pin-in ${pin ? 'hidden' : ''}" name="pin" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" placeholder="Код игры" value="${esc(pin)}" autocomplete="off">
+      <input class="input" name="name" maxlength="20" placeholder="Твоё имя" autocomplete="nickname" value="${esc(localStorage.getItem('sq_name') || '')}">
+      <div class="err-msg" id="err">${esc(errText)}</div>
+      <button class="btn btn-primary" type="submit">Войти в игру</button>
+    </form>
+  </div></div>`;
+  const f = document.getElementById('joinForm');
+  (pin ? f.name : f.pin).focus();
+  f.onsubmit = e => {
+    e.preventDefault();
+    const pinV = f.pin.value.replace(/\D/g, ''), name = f.name.value.trim();
+    const err = document.getElementById('err');
+    if (pinV.length !== 6) return err.textContent = 'Код — 6 цифр с экрана ведущего';
+    if (name.length < 2) return err.textContent = 'Напиши имя (минимум 2 символа)';
+    f.querySelector('button').disabled = true;
+    socket.emit('player:join', { pin: pinV, name }, res => {
+      f.querySelector('button').disabled = false;
+      if (res?.error) return err.textContent = res.error;
+      try { localStorage.setItem('sq_name', name); } catch {}
+      me = { pin: pinV, ...res }; saveSession(); Sound.sfx('join');
+      if (res.status === 'lobby') showLobby();
+    });
+  };
+}
+
+function showLobby() {
+  stopTimer();
+  app.innerHTML = `<div class="screen"><div class="center-col">
+    <div class="big-av">${me.avatar}</div>
+    <h1 class="big">${esc(me.name)}</h1>
+    <p class="sub">Ты в игре «${esc(me.title)}»</p>
+    <p class="sub pulse" style="margin-top:18px">Смотри на экран — скоро начнём</p>
+    <button class="leave" id="leave">Выйти</button>
+  </div></div>`;
+  document.getElementById('leave').onclick = () => { socket.emit('player:leave'); clearSession(); me = null; showJoin(); };
+}
+
+/* ---------- вопрос ---------- */
+socket.on('player:question', data => {
+  clearTimeout(nextTimer);
+  q = data; picked = []; answeredIndex = -1;
+  const long = q.options.some(o => o.split(' ').some(w => w.length > 11) || o.length > 26) || q.options.length > 4;
+  app.innerHTML = `<div class="screen">
+    <div class="qtop"><span class="pill">${q.index + 1} / ${q.total}</span><span class="pill" id="myScore">${me?.score ?? 0} ★</span></div>
+    <div class="timer"><i id="tbar"></i></div>
+    <div class="qbox">${q.image ? `<img src="${esc(q.image)}" alt="">` : ''}<div>${esc(q.text)}</div>
+      ${q.type === 'multi' ? `<div class="qhint">Выбери ${q.multiCount} ${plural(q.multiCount, 'вариант', 'варианта', 'вариантов')}</div>` : ''}</div>
+    <div class="options ${long ? 'single-col' : ''}" id="opts">
+      ${q.options.map((o, i) => `<button class="option" data-i="${i}" style="background:var(--opt${i})"><span class="lt">${LT[i]}</span><span>${esc(o)}</span></button>`).join('')}
+    </div>
+    ${q.type === 'multi' ? `<button class="btn btn-white submit" id="submitBtn" disabled>Ответить</button>` : ''}
+  </div>`;
+  if (lastResult) document.getElementById('myScore').textContent = lastResult.score.toLocaleString('ru-RU') + ' ★';
+  const opts = document.getElementById('opts');
+  opts.onclick = e => {
+    const b = e.target.closest('.option'); if (!b || answeredIndex === q.index) return;
+    const i = Number(b.dataset.i);
+    Sound.sfx('tap');
+    if (q.type === 'single') { picked = [i]; b.classList.add('sel'); send(); }
+    else {
+      picked = picked.includes(i) ? picked.filter(x => x !== i) : [...picked, i];
+      b.classList.toggle('sel');
+      document.getElementById('submitBtn').disabled = !picked.length;
+    }
+  };
+  if (q.type === 'multi') document.getElementById('submitBtn').onclick = send;
+  startTimer(q.time * 1000 - (data.elapsed || 0), q.time * 1000);
+  Sound.sfx('join');
+  navigator.vibrate?.(30);
+});
+
+function send() {
+  if (answeredIndex === q.index) return;
+  answeredIndex = q.index; stopTimer();
+  document.getElementById('opts')?.classList.add('locked');
+  const sb = document.getElementById('submitBtn'); if (sb) { sb.disabled = true; sb.textContent = 'Ответ принят'; }
+  socket.emit('player:answer', { index: q.index, choice: picked });
+}
+
+function startTimer(left, total) {
+  stopTimer();
+  deadline = performance.now() + left;
+  const bar = document.getElementById('tbar');
+  let lastSec = -1;
+  const tick = () => {
+    const rem = Math.max(0, deadline - performance.now());
+    bar.style.transform = `scaleX(${rem / total})`;
+    bar.classList.toggle('warn', rem < 5000);
+    const sec = Math.ceil(rem / 1000);
+    if (sec !== lastSec) { if (lastSec !== -1 && sec <= 5 && sec > 0) Sound.sfx(sec <= 2 ? 'tickUrgent' : 'tick'); lastSec = sec; }
+    if (rem <= 0) { send(); return; }
+    timerRAF = requestAnimationFrame(tick);
+  };
+  tick();
+}
+function stopTimer() { cancelAnimationFrame(timerRAF); }
+
+/* ---------- результат ответа ---------- */
+socket.on('player:result', r => {
+  stopTimer(); lastResult = r; if (me) me.score = r.score;
+  navigator.vibrate?.(r.correct ? [40] : [80, 60, 80]);
+  Sound.sfx(r.correct ? 'correct' : r.timedOut ? 'timeout' : 'wrong');
+  if (r.correct && r.streak >= 3) setTimeout(() => Sound.sfx('streak'), 350);
+  const correctText = r.correctIdx && q ? r.correctIdx.map(i => q.options[i]).join(', ') : '';
+  const el = document.createElement('div');
+  el.className = 'result ' + (r.correct ? 'ok' : 'bad');
+  el.innerHTML = `
+    <div class="icon">${r.correct ? '✅' : r.timedOut ? '⏰' : '❌'}</div>
+    <h1>${r.correct ? 'Верно!' : r.timedOut ? 'Время вышло' : 'Неверно'}</h1>
+    ${r.correct ? `<div class="pts">+${r.gained.toLocaleString('ru-RU')}</div>` : ''}
+    ${r.streak >= 2 ? `<div class="meta">🔥 Серия: ${r.streak} подряд</div>` : ''}
+    ${!r.correct && correctText ? `<div class="answer"><small>Правильный ответ</small>${esc(correctText)}</div>` : ''}
+    <div class="meta">Место ${r.rank} из ${r.players} · ${r.score.toLocaleString('ru-RU')} очков</div>
+    <button class="btn btn-white next">${r.last ? 'Завершить' : 'Дальше →'}</button>`;
+  document.body.appendChild(el);
+  const go = () => { clearTimeout(nextTimer); el.remove(); socket.emit('player:next'); };
+  el.querySelector('.next').onclick = go;
+  nextTimer = setTimeout(go, r.correct ? 2600 : 3800);
+});
+
+/* ---------- финал ---------- */
+function scoreCard(s, title, sub) {
+  return `<div class="screen"><div class="center-col">
+    <div class="big-av">${s.avatar}</div>
+    <h1 class="big">${title}</h1>
+    <p class="sub">${sub}</p>
+    <div class="score-card">
+      <div class="lbl">Место</div><div class="place">${s.rank}<span style="font-size:28px;color:var(--muted)"> / ${s.players}</span></div>
+      <div class="row"><div><b>${s.score.toLocaleString('ru-RU')}</b><span class="lbl">очков</span></div><div><b>${s.correct}/${s.total}</b><span class="lbl">верно</span></div></div>
+    </div>
+  </div></div>`;
+}
+socket.on('player:finished', s => {
+  stopTimer(); document.querySelectorAll('.result').forEach(e => e.remove());
+  Sound.sfx('finished');
+  app.innerHTML = scoreCard(s, 'Готово!', 'Ты ответил на все вопросы. Смотри на экран — итоги после завершения игры.');
+});
+socket.on('player:ended', s => {
+  stopTimer(); clearTimeout(nextTimer); document.querySelectorAll('.result').forEach(e => e.remove());
+  const title = s.rank === 1 ? 'Победа! 🏆' : s.rank <= 3 ? 'Ты в тройке! 🎉' : 'Игра окончена';
+  app.innerHTML = scoreCard(s, title, 'Спасибо за игру!');
+  clearSession();
+  if (s.rank <= 3) { confetti(); Sound.sfx('fanfare'); } else Sound.sfx('end');
+});
+socket.on('player:kicked', () => { clearSession(); me = null; stopTimer(); showJoin('Ведущий убрал тебя из игры'); });
+
+function confetti() {
+  const c = document.createElement('div'); c.className = 'confetti';
+  const colors = ['#D32F2F', '#FFFFFF', '#FFC94D', '#8AB4FF', '#14915F'];
+  for (let i = 0; i < 90; i++) {
+    const p = document.createElement('i');
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.background = colors[i % colors.length];
+    p.style.animationDuration = 2 + Math.random() * 2.5 + 's';
+    p.style.animationDelay = Math.random() * .8 + 's';
+    c.appendChild(p);
+  }
+  document.body.appendChild(c); setTimeout(() => c.remove(), 6000);
+}
+</script>
+</body>
+</html>
